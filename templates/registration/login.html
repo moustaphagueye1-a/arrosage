@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}Connexion - Pointage Arrosage{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-5">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white text-center">
+                <h4>🔐 Connexion</h4>
+                <p class="mb-0">Système de Pointage d'Arrosage</p>
+            </div>
+            <div class="card-body">
+                {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <strong>Erreur !</strong> Nom d'utilisateur ou mot de passe incorrect.
+                    </div>
+                {% endif %}
+
+                {% if next %}
+                    {% if user.is_authenticated %}
+                        <div class="alert alert-warning">
+                            Vous n'avez pas l'autorisation d'accéder à cette page. Veuillez vous connecter avec un compte autorisé.
+                        </div>
+                    {% endif %}
+                {% endif %}
+
+                <form method="post" action="{% url 'login' %}">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="id_username" class="form-label">
+                            <strong>Nom d'utilisateur</strong>
+                        </label>
+                        <input 
+                            type="text" 
+                            name="username" 
+                            id="id_username"
+                            class="form-control form-control-lg" 
+                            placeholder="Entrez votre nom d'utilisateur"
+                            autofocus 
+                            required
+                        >
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_password" class="form-label">
+                            <strong>Mot de passe</strong>
+                        </label>
+                        <input 
+                            type="password" 
+                            name="password" 
+                            id="id_password"
+                            class="form-control form-control-lg" 
+                            placeholder="Entrez votre mot de passe"
+                            required
+                        >
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            ✅ Se connecter
+                        </button>
+                    </div>
+
+                    <input type="hidden" name="next" value="{{ next }}">
+                </form>
+            </div>
+            <div class="card-footer text-center text-muted">
+                <small>Connectez-vous pour accéder au pointage d'arrosage</small>
+            </div>
+        </div>
+
+        <!-- Informations supplémentaires -->
+        <div class="card mt-3">
+            <div class="card-body">
+                <h6 class="card-title">ℹ️ Première utilisation ?</h6>
+                <p class="small mb-0">
+                    Contactez l'administrateur pour obtenir vos identifiants de connexion.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

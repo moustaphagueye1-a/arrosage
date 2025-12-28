@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+
+{% block title %}Vérification GPS - Pointage Arrosage{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-success text-white text-center">
+                <h4>📍 Vérification de Position</h4>
+            </div>
+            <div class="card-body text-center">
+                <div id="status">
+                    <div class="spinner-border text-success mb-3" role="status">
+                        <span class="visually-hidden">Chargement...</span>
+                    </div>
+                    <p class="lead">Vérification de votre position GPS...</p>
+                    <p class="text-muted">Veuillez autoriser l'accès à votre localisation</p>
+                </div>
+                
+                <div id="resultat" class="d-none">
+                    <!-- Résultat affiché par JavaScript -->
+                </div>
+                
+                <button id="btn-retester" class="btn btn-primary d-none" onclick="verifierPosition()">
+                    🔄 Réessayer
+                </button>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-body">
+                <h6 class="card-title">ℹ️ Informations</h6>
+                <ul class="small">
+                    <li>Vous devez être physiquement au champ</li>
+                    <li>Rayon autorisé : <strong>50 mètres</strong></li>
+                    <li>La géolocalisation doit être activée</li>
+                    <li>Connexion internet requise</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Vérifier automatiquement la position au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    verifierPosition();
+});
+
+function verifierPosition() {
+    const statusDiv = document.getElementById('status');
+    const resultatDiv = document.getElementById('resultat');
+    const btnRetester = document.getElementById('btn-retester');
+    
+    // Réinitialiser l'affichage
+    statusDiv.classList.remove('d-none');
+    resultatDiv.classList.add('d-none');
+    btnRetester.classList.add('d-none');
+    
+    if (!navigator.geolocation) {
+        afficherErreur('❌ Géolocalisation non supportée par votre navigateur');
+        return;
+    }
+    
+    navigator.geolocation.getCurrentPosition(
+        // Succès
+        function(position) {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+            const precision = position.coords.accuracy;
+            
+            console.log('Position obtenue:', latitude, longitude, 'Précision:', precision + 'm');
+            
+            // Envoyer au serveur pour vérification
+            fetch('{% url "verifier_gps" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    latitude: latitude,
+                    longitude: longitude
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                statusDiv.classList.add('d-none');
+                resultatDiv.classList.remove('d-none');
+                
+                if (data.success) {
+                    resultatDiv.innerHTML = `
+                        <div class="alert alert-success">
+                            <h5>✅ Position Validée !</h5>
+                            <p>${data.message}</p>
+                            <p class="small mb-0">Redirection en cours...</p>
+                        </div>
+                    `;
+                    
+                    // Rediriger vers le formulaire après 2 secondes
+                    setTimeout(function() {
+                        window.location.href = data.redirect_url;
+                    }, 2000);
+                } else {
+                    resultatDiv.innerHTML = `
+                        <div class="alert alert-danger">
+                            <h5>❌ Position Refusée</h5>
+                            <p>${data.message}</p>
+                            <p class="small mb-0">Vous devez être au champ pour continuer.</p>
+                        </div>
+                    `;
+                    btnRetester.classList.remove('d-none');
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                afficherErreur('❌ Erreur de connexion au serveur');
+            });
+        },
+        // Erreur
+        function(error) {
+            let message = '';
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    message = "❌ Vous avez refusé l'accès à la géolocalisation. Veuillez l'autoriser dans les paramètres de votre navigateur.";
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    message = "❌ Impossible d'obtenir votre position. Vérifiez que le GPS est activé.";
+                    break;
+                case error.TIMEOUT:
+                    message = "❌ La demande de géolocalisation a expiré. Réessayez.";
+                    break;
+                default:
+                    message = "❌ Erreur inconnue lors de la géolocalisation.";
+            }
+            afficherErreur(message);
+        },
+        // Options
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        }
+    );
+}
+
+function afficherErreur(message) {
+    const statusDiv = document.getElementById('status');
+    const resultatDiv = document.getElementById('resultat');
+    const btnRetester = document.getElementById('btn-retester');
+    
+    statusDiv.classList.add('d-none');
+    resultatDiv.classList.remove('d-none');
+    
+    resultatDiv.innerHTML = `
+        <div class="alert alert-danger">
+            <h5>Erreur</h5>
+            <p>${message}</p>
+        </div>
+    `;
+    
+    btnRetester.classList.remove('d-none');
+}
+</script>
+{% endblock %}

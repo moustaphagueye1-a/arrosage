@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+
+{% block title %}Pointage Arrosage{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h4>🚿 Pointage d'Arrosage</h4>
+            </div>
+            <div class="card-body">
+                {% if arrosage_en_cours %}
+                    <!-- Arrosage en cours -->
+                    <div class="alert alert-info">
+                        <h5>⏳ Arrosage en cours</h5>
+                        <p><strong>Groupe :</strong> {{ arrosage_en_cours.groupe.nom }}</p>
+                        <p><strong>Démarré à :</strong> {{ arrosage_en_cours.heure_debut|date:"d/m/Y H:i" }}</p>
+                        <p class="mb-0"><strong>Durée écoulée :</strong> <span id="duree-ecoulee"></span></p>
+                    </div>
+                    
+                    <form method="post" id="form-terminer">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="terminer">
+                        <input type="hidden" name="latitude" id="latitude-fin">
+                        <input type="hidden" name="longitude" id="longitude-fin">
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger btn-lg">
+                                🛑 Terminer l'Arrosage
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <script>
+                        // Calculer et afficher la durée écoulée
+                        const heureDebut = new Date("{{ arrosage_en_cours.heure_debut|date:'c' }}");
+                        
+                        function mettreAJourDuree() {
+                            const maintenant = new Date();
+                            const diff = maintenant - heureDebut;
+                            const minutes = Math.floor(diff / 60000);
+                            const secondes = Math.floor((diff % 60000) / 1000);
+                            
+                            document.getElementById('duree-ecoulee').textContent = 
+                                `${minutes} min ${secondes} sec`;
+                            
+                            // Changer la couleur si >= 20 minutes
+                            const alert = document.querySelector('.alert-info');
+                            if (minutes >= 20) {
+                                alert.classList.remove('alert-info');
+                                alert.classList.add('alert-success');
+                            }
+                        }
+                        
+                        // Mettre à jour chaque seconde
+                        setInterval(mettreAJourDuree, 1000);
+                        mettreAJourDuree();
+                        
+                        // Récupérer la position GPS avant de soumettre
+                        document.getElementById('form-terminer').addEventListener('submit', function(e) {
+                            e.preventDefault();
+                            
+                            if (!navigator.geolocation) {
+                                alert('Géolocalisation non supportée');
+                                return;
+                            }
+                            
+                            navigator.geolocation.getCurrentPosition(
+                                function(position) {
+                                    document.getElementById('latitude-fin').value = position.coords.latitude;
+                                    document.getElementById('longitude-fin').value = position.coords.longitude;
+                                    e.target.submit();
+                                },
+                                function(error) {
+                                    alert('Erreur de géolocalisation : veuillez activer le GPS');
+                                },
+                                {
+                                    enableHighAccuracy: true,
+                                    timeout: 10000,
+                                    maximumAge: 0
+                                }
+                            );
+                        });
+                    </script>
+                {% else %}
+                    <!-- Démarrer un nouvel arrosage -->
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="demarrer">
+                        
+                        <div class="mb-3">
+                            <label for="groupe" class="form-label">
+                                <strong>Sélectionner un groupe d'arrosage :</strong>
+                            </label>
+                            <select name="groupe" id="groupe" class="form-select form-select-lg" required>
+                                <option value="">-- Choisir un groupe --</option>
+                                {% for groupe in groupes %}
+                                    <option value="{{ groupe.id }}">{{ groupe.nom }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="alert alert-warning">
+                            <h6>⚠️ Important</h6>
+                            <ul class="mb-0 small">
+                                <li>Vous devez rester au champ pendant l'arrosage</li>
+                                <li>Durée minimale : <strong>20 minutes</strong></li>
+                                <li>Vous devrez revenir ici pour terminer</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                ▶️ Démarrer l'Arrosage
+                            </button>
+                        </div>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Informations supplémentaires -->
+        <div class="card mt-3">
+            <div class="card-body">
+                <h6 class="card-title">📋 Instructions</h6>
+                <ol class="small">
+                    <li>Sélectionnez votre groupe d'arrosage</li>
+                    <li>Cliquez sur "Démarrer l'Arrosage"</li>
+                    <li>Effectuez l'arrosage (minimum 20 minutes)</li>
+                    <li>Revenez sur cette page</li>
+                    <li>Cliquez sur "Terminer l'Arrosage"</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

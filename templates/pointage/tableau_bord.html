@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+
+{% block title %}Tableau de Bord - Pointage Arrosage{% endblock %}
+
+{% block content %}
+<div class="row mt-4">
+    <div class="col-12">
+        <h2 class="mb-4">📈 Tableau de Bord Administrateur</h2>
+        
+        <!-- Statistiques globales -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body text-center">
+                        <h6>Total Arrosages</h6>
+                        <h2>{{ total_arrosages }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body text-center">
+                        <h6>✅ Validés</h6>
+                        <h2>{{ arrosages_valides }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-danger text-white">
+                    <div class="card-body text-center">
+                        <h6>❌ Invalidés</h6>
+                        <h2>{{ arrosages_invalides }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-dark">
+                    <div class="card-body text-center">
+                        <h6>⏳ En Cours</h6>
+                        <h2>{{ arrosages_en_cours }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Groupes d'arrosage -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5>🚿 Groupes d'Arrosage</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for groupe in groupes %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title">{{ groupe.nom }}</h6>
+                                <p class="card-text small text-muted">
+                                    {{ groupe.arrosages.count }} arrosage(s)
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Liste des derniers arrosages -->
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h5>📋 Derniers Arrosages</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Utilisateur</th>
+                                <th>Groupe</th>
+                                <th>Date</th>
+                                <th>Début</th>
+                                <th>Fin</th>
+                                <th>Durée</th>
+                                <th>Statut</th>
+                                <th>GPS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for arrosage in arrosages %}
+                            <tr>
+                                <td>{{ arrosage.id }}</td>
+                                <td><strong>{{ arrosage.utilisateur.username }}</strong></td>
+                                <td>{{ arrosage.groupe.nom }}</td>
+                                <td>{{ arrosage.heure_debut|date:"d/m/Y" }}</td>
+                                <td>{{ arrosage.heure_debut|date:"H:i" }}</td>
+                                <td>
+                                    {% if arrosage.heure_fin %}
+                                        {{ arrosage.heure_fin|date:"H:i" }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if arrosage.duree_minutes %}
+                                        {{ arrosage.duree_minutes }} min
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if arrosage.statut == 'valide' %}
+                                        <span class="badge bg-success">✅ Validé</span>
+                                    {% elif arrosage.statut == 'invalide' %}
+                                        <span class="badge bg-danger" 
+                                              data-bs-toggle="tooltip" 
+                                              title="{{ arrosage.commentaire }}">
+                                            ❌ Invalidé
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">⏳ En cours</span>
+                                    {% endif %}
+                                </td>
+                                <td class="small">
+                                    <span data-bs-toggle="tooltip" 
+                                          title="Début: {{ arrosage.latitude_debut }}, {{ arrosage.longitude_debut }}">
+                                        📍 Voir
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Activer les tooltips Bootstrap
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+</script>
+{% endblock %}
