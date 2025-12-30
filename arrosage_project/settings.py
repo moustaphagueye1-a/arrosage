@@ -5,11 +5,16 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'ecz@g-r-249gkc5v*&p=q*y%6+&@9gfb5&xkl-c7=$44b@)wzq'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'ecz@g-r-249gkc5v*&p=q*y%6+&@9gfb5&xkl-c7=$44b@)wzq')
 
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = ['*']  # Pour les tests. En production, mettez votre domaine
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    'votre-username.pythonanywhere.com',  # ← À remplacer
+    '*',
+] # Pour les tests. En production, mettez votre domaine
 
 # Application Definition
 INSTALLED_APPS = [
